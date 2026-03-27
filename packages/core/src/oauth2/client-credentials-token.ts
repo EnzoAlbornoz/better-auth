@@ -1,20 +1,70 @@
 import { base64Url } from "@better-auth/utils/base64";
 import { betterFetch } from "@better-fetch/fetch";
 import type { AwaitableFunction } from "../types";
+import {
+	buildClientJwtAssertion,
+	buildClientSecretJwtAssertion,
+} from "./client-assertion";
 import type { OAuth2Tokens, ProviderOptions } from "./oauth-provider";
 
 export async function clientCredentialsTokenRequest({
 	options,
 	scope,
 	authentication,
+	tokenEndpoint,
 	resource,
 }: {
 	options: AwaitableFunction<ProviderOptions & { clientSecret: string }>;
 	scope?: string | undefined;
-	authentication?: ("basic" | "post") | undefined;
+	authentication?:
+		| ("basic" | "post" | "private_key_jwt" | "client_secret_jwt")
+		| undefined;
+	tokenEndpoint?: string | undefined;
 	resource?: (string | string[]) | undefined;
 }) {
 	options = typeof options === "function" ? await options() : options;
+
+	if (
+		authentication === "private_key_jwt" ||
+		authentication === "client_secret_jwt"
+	) {
+		const body = new URLSearchParams();
+		const headers: Record<string, unknown> = {
+			"content-type": "application/x-www-form-urlencoded",
+			accept: "application/json",
+		};
+		body.set("grant_type", "client_credentials");
+		scope && body.set("scope", scope);
+		if (resource) {
+			if (typeof resource === "string") {
+				body.append("resource", resource);
+			} else {
+				for (const _resource of resource) {
+					body.append("resource", _resource);
+				}
+			}
+		}
+		const primaryClientId = Array.isArray(options.clientId)
+			? options.clientId[0]
+			: options.clientId;
+		body.set("client_id", String(primaryClientId));
+		const assertion =
+			authentication === "private_key_jwt"
+				? await buildClientJwtAssertion({
+						clientId: String(primaryClientId),
+						tokenEndpoint: tokenEndpoint!,
+						privateKey: options.privateKey!,
+					})
+				: await buildClientSecretJwtAssertion({
+						clientId: String(primaryClientId),
+						tokenEndpoint: tokenEndpoint!,
+						clientSecret: options.clientSecret,
+					});
+		body.set("client_assertion", assertion.client_assertion);
+		body.set("client_assertion_type", assertion.client_assertion_type);
+		return { body, headers };
+	}
+
 	return createClientCredentialsTokenRequest({
 		options,
 		scope,
@@ -86,13 +136,16 @@ export async function clientCredentialsToken({
 	options: AwaitableFunction<ProviderOptions & { clientSecret: string }>;
 	tokenEndpoint: string;
 	scope: string;
-	authentication?: ("basic" | "post") | undefined;
+	authentication?:
+		| ("basic" | "post" | "private_key_jwt" | "client_secret_jwt")
+		| undefined;
 	resource?: (string | string[]) | undefined;
 }): Promise<OAuth2Tokens> {
 	const { body, headers } = await clientCredentialsTokenRequest({
 		options,
 		scope,
 		authentication,
+		tokenEndpoint,
 		resource,
 	});
 

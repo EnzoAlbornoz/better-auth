@@ -1,22 +1,62 @@
 import { base64 } from "@better-auth/utils/base64";
 import { betterFetch } from "@better-fetch/fetch";
 import type { AwaitableFunction } from "../types";
+import {
+	buildClientJwtAssertion,
+	buildClientSecretJwtAssertion,
+} from "./client-assertion";
 import type { OAuth2Tokens, ProviderOptions } from "./oauth-provider";
 
 export async function refreshAccessTokenRequest({
 	refreshToken,
 	options,
 	authentication,
+	tokenEndpoint,
 	extraParams,
 	resource,
 }: {
 	refreshToken: string;
 	options: AwaitableFunction<Partial<ProviderOptions>>;
-	authentication?: ("basic" | "post") | undefined;
+	authentication?:
+		| ("basic" | "post" | "private_key_jwt" | "client_secret_jwt")
+		| undefined;
+	tokenEndpoint?: string | undefined;
 	extraParams?: Record<string, string> | undefined;
 	resource?: (string | string[]) | undefined;
 }) {
 	options = typeof options === "function" ? await options() : options;
+
+	if (
+		authentication === "private_key_jwt" ||
+		authentication === "client_secret_jwt"
+	) {
+		const { body, headers } = createRefreshAccessTokenRequest({
+			refreshToken,
+			options: { ...options, clientSecret: undefined },
+			authentication: "post",
+			extraParams,
+			resource,
+		});
+		const primaryClientId = Array.isArray(options.clientId)
+			? options.clientId[0]
+			: options.clientId;
+		const assertion =
+			authentication === "private_key_jwt"
+				? await buildClientJwtAssertion({
+						clientId: String(primaryClientId),
+						tokenEndpoint: tokenEndpoint!,
+						privateKey: options.privateKey!,
+					})
+				: await buildClientSecretJwtAssertion({
+						clientId: String(primaryClientId),
+						tokenEndpoint: tokenEndpoint!,
+						clientSecret: options.clientSecret!,
+					});
+		body.set("client_assertion", assertion.client_assertion);
+		body.set("client_assertion_type", assertion.client_assertion_type);
+		return { body, headers };
+	}
+
 	return createRefreshAccessTokenRequest({
 		refreshToken,
 		options,
@@ -105,13 +145,16 @@ export async function refreshAccessToken({
 	refreshToken: string;
 	options: Partial<ProviderOptions>;
 	tokenEndpoint: string;
-	authentication?: ("basic" | "post") | undefined;
+	authentication?:
+		| ("basic" | "post" | "private_key_jwt" | "client_secret_jwt")
+		| undefined;
 	extraParams?: Record<string, string> | undefined;
 }): Promise<OAuth2Tokens> {
-	const { body, headers } = await createRefreshAccessTokenRequest({
+	const { body, headers } = await refreshAccessTokenRequest({
 		refreshToken,
 		options,
 		authentication,
+		tokenEndpoint,
 		extraParams,
 	});
 

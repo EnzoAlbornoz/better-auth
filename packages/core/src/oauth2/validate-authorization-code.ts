@@ -2,6 +2,10 @@ import { base64 } from "@better-auth/utils/base64";
 import { betterFetch } from "@better-fetch/fetch";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import type { AwaitableFunction } from "../types";
+import {
+	buildClientJwtAssertion,
+	buildClientSecretJwtAssertion,
+} from "./client-assertion";
 import type { ProviderOptions } from "./index";
 import { getOAuth2Tokens } from "./index";
 
@@ -11,6 +15,7 @@ export async function authorizationCodeRequest({
 	redirectURI,
 	options,
 	authentication,
+	tokenEndpoint,
 	deviceId,
 	headers,
 	additionalParams = {},
@@ -21,12 +26,51 @@ export async function authorizationCodeRequest({
 	options: AwaitableFunction<Partial<ProviderOptions>>;
 	codeVerifier?: string | undefined;
 	deviceId?: string | undefined;
-	authentication?: ("basic" | "post") | undefined;
+	authentication?:
+		| ("basic" | "post" | "private_key_jwt" | "client_secret_jwt")
+		| undefined;
+	tokenEndpoint?: string | undefined;
 	headers?: Record<string, string> | undefined;
 	additionalParams?: Record<string, string> | undefined;
 	resource?: (string | string[]) | undefined;
 }) {
 	options = typeof options === "function" ? await options() : options;
+
+	if (
+		authentication === "private_key_jwt" ||
+		authentication === "client_secret_jwt"
+	) {
+		const { body, headers: requestHeaders } = createAuthorizationCodeRequest({
+			code,
+			codeVerifier,
+			redirectURI,
+			options: { ...options, clientSecret: undefined },
+			authentication: "post",
+			deviceId,
+			headers,
+			additionalParams,
+			resource,
+		});
+		const primaryClientId = Array.isArray(options.clientId)
+			? options.clientId[0]
+			: options.clientId;
+		const assertion =
+			authentication === "private_key_jwt"
+				? await buildClientJwtAssertion({
+						clientId: String(primaryClientId),
+						tokenEndpoint: tokenEndpoint!,
+						privateKey: options.privateKey!,
+					})
+				: await buildClientSecretJwtAssertion({
+						clientId: String(primaryClientId),
+						tokenEndpoint: tokenEndpoint!,
+						clientSecret: options.clientSecret!,
+					});
+		body.set("client_assertion", assertion.client_assertion);
+		body.set("client_assertion_type", assertion.client_assertion_type);
+		return { body, headers: requestHeaders };
+	}
+
 	return createAuthorizationCodeRequest({
 		code,
 		codeVerifier,
@@ -134,7 +178,9 @@ export async function validateAuthorizationCode({
 	codeVerifier?: string | undefined;
 	deviceId?: string | undefined;
 	tokenEndpoint: string;
-	authentication?: ("basic" | "post") | undefined;
+	authentication?:
+		| ("basic" | "post" | "private_key_jwt" | "client_secret_jwt")
+		| undefined;
 	headers?: Record<string, string> | undefined;
 	additionalParams?: Record<string, string> | undefined;
 	resource?: (string | string[]) | undefined;
@@ -145,6 +191,7 @@ export async function validateAuthorizationCode({
 		redirectURI,
 		options,
 		authentication,
+		tokenEndpoint,
 		deviceId,
 		headers,
 		additionalParams,
