@@ -331,12 +331,24 @@ const ssoProviderBodySchema = z.object({
 				})
 				.optional(),
 			tokenEndpointAuthentication: z
-				.enum(["client_secret_post", "client_secret_basic"])
+				.enum([
+					"client_secret_post",
+					"client_secret_basic",
+					"private_key_jwt",
+					"client_secret_jwt",
+				])
 				.optional(),
 			jwksEndpoint: z
 				.string({})
 				.meta({
 					description: "The JWKS endpoint",
+				})
+				.optional(),
+			clientPrivateKey: z
+				.string()
+				.meta({
+					description:
+						"Private key (PEM PKCS#8 or JWK JSON string) for private_key_jwt authentication",
 				})
 				.optional(),
 			discoveryEndpoint: z.string().optional(),
@@ -568,7 +580,14 @@ export const registerSSOProvider = <O extends SSOOptions>(options: O) => {
 														nullable: true,
 														description: "The authorization endpoint URL",
 													},
-													discoveryEndpoint: {
+													clientPrivateKey: z
+												.string()
+												.meta({
+													description:
+														"Private key (PEM PKCS#8 or JWK JSON string) for private_key_jwt authentication",
+												})
+												.optional(),
+											discoveryEndpoint: {
 														type: "string",
 														format: "uri",
 														description: "The discovery endpoint URL",
@@ -594,7 +613,12 @@ export const registerSSOProvider = <O extends SSOOptions>(options: O) => {
 													},
 													tokenEndpointAuthentication: {
 														type: "string",
-														enum: ["client_secret_post", "client_secret_basic"],
+														enum: [
+															"client_secret_post",
+															"client_secret_basic",
+															"private_key_jwt",
+															"client_secret_jwt",
+														],
 														nullable: true,
 														description:
 															"Authentication method for the token endpoint",
@@ -796,6 +820,7 @@ export const registerSSOProvider = <O extends SSOOptions>(options: O) => {
 							tokenEndpointAuthentication:
 								body.oidcConfig.tokenEndpointAuthentication,
 						},
+						hasPrivateKey: !!body.oidcConfig.clientPrivateKey,
 						isTrustedOrigin: (url: string) => ctx.context.isTrustedOrigin(url),
 					});
 				} catch (error) {
@@ -819,6 +844,7 @@ export const registerSSOProvider = <O extends SSOOptions>(options: O) => {
 						tokenEndpointAuthentication:
 							body.oidcConfig.tokenEndpointAuthentication ||
 							"client_secret_basic",
+						clientPrivateKey: body.oidcConfig.clientPrivateKey,
 						jwksEndpoint: body.oidcConfig.jwksEndpoint,
 						pkce: body.oidcConfig.pkce,
 						discoveryEndpoint:
@@ -844,6 +870,7 @@ export const registerSSOProvider = <O extends SSOOptions>(options: O) => {
 					tokenEndpoint: hydratedOIDCConfig.tokenEndpoint,
 					tokenEndpointAuthentication:
 						hydratedOIDCConfig.tokenEndpointAuthentication,
+					clientPrivateKey: body.oidcConfig.clientPrivateKey,
 					jwksEndpoint: hydratedOIDCConfig.jwksEndpoint,
 					pkce: body.oidcConfig.pkce,
 					discoveryEndpoint: hydratedOIDCConfig.discoveryEndpoint,
@@ -1594,12 +1621,17 @@ async function handleOIDCCallback(
 		options: {
 			clientId: config.clientId,
 			clientSecret: config.clientSecret,
+			privateKey: config.clientPrivateKey,
 		},
 		tokenEndpoint: config.tokenEndpoint,
 		authentication:
 			config.tokenEndpointAuthentication === "client_secret_post"
 				? "post"
-				: "basic",
+				: config.tokenEndpointAuthentication === "private_key_jwt"
+					? "private_key_jwt"
+					: config.tokenEndpointAuthentication === "client_secret_jwt"
+						? "client_secret_jwt"
+						: "basic",
 	}).catch((e) => {
 		ctx.context.logger.error("Error validating authorization code", e);
 		if (e instanceof BetterFetchError) {
