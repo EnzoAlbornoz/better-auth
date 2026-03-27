@@ -66,6 +66,7 @@ export async function discoverOIDCConfig(
 	const tokenEndpointAuth = selectTokenEndpointAuthMethod(
 		normalizedDoc,
 		existingConfig?.tokenEndpointAuthentication,
+		{ hasPrivateKey: params.hasPrivateKey },
 	);
 
 	const hydratedConfig: HydratedOIDCConfig = {
@@ -443,17 +444,31 @@ function parseURL(name: string, endpoint: string, base?: string) {
  *
  * @param doc - The discovery document
  * @param existing - Existing authentication method from config
+ * @param additionalContext - Additional context for method selection
  * @returns The selected authentication method
  */
 export function selectTokenEndpointAuthMethod(
 	doc: OIDCDiscoveryDocument,
-	existing?: "client_secret_basic" | "client_secret_post",
-): "client_secret_basic" | "client_secret_post" {
+	existing?:
+		| "client_secret_basic"
+		| "client_secret_post"
+		| "private_key_jwt"
+		| "client_secret_jwt",
+	additionalContext?: { hasPrivateKey?: boolean },
+):
+	| "client_secret_basic"
+	| "client_secret_post"
+	| "private_key_jwt"
+	| "client_secret_jwt" {
 	if (existing) {
 		return existing;
 	}
 
 	const supported = doc.token_endpoint_auth_methods_supported;
+
+	if (additionalContext?.hasPrivateKey && supported?.includes("private_key_jwt")) {
+		return "private_key_jwt";
+	}
 
 	if (!supported || supported.length === 0) {
 		return "client_secret_basic";
@@ -513,6 +528,7 @@ export async function ensureRuntimeDiscovery(
 		issuer,
 		existingConfig: config,
 		isTrustedOrigin,
+		hasPrivateKey: !!config.clientPrivateKey,
 	});
 	return {
 		...config,
