@@ -126,6 +126,14 @@ export type ProviderOptions<Profile extends Record<string, any> = any> = {
 	 */
 	authorizationEndpoint?: string | undefined;
 	/**
+	 * Private key for `private_key_jwt` client authentication (RFC 7523).
+	 *
+	 * Accepts a PEM-encoded PKCS#8 string or a JSON-serialised JWK string.
+	 * When provided, token requests will use `private_key_jwt` authentication
+	 * instead of sending the client secret.
+	 */
+	privateKey?: string | undefined;
+	/**
 	 * The client key of your application
 	 * Tiktok Social Provider uses this field instead of clientId
 	 */
