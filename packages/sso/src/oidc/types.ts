@@ -45,6 +45,12 @@ export interface OIDCDiscoveryDocument {
 	 */
 	token_endpoint_auth_methods_supported?: string[];
 
+	/**
+	 * OPTIONAL. JSON array of JWS algorithms supported for client authentication
+	 * at the Token Endpoint (e.g. ["RS256", "ES256"]).
+	 */
+	token_endpoint_auth_signing_alg_values_supported?: string[];
+
 	/** OPTIONAL. JSON array containing a list of the OAuth 2.0 scope values that this server supports. */
 	scopes_supported?: string[];
 
@@ -167,7 +173,11 @@ export interface HydratedOIDCConfig {
 	userInfoEndpoint?: string;
 
 	/** Token endpoint authentication method */
-	tokenEndpointAuthentication?: "client_secret_basic" | "client_secret_post";
+	tokenEndpointAuthentication?:
+		| "client_secret_basic"
+		| "client_secret_post"
+		| "private_key_jwt"
+		| "client_secret_jwt";
 
 	/** Scopes supported by the IdP */
 	scopesSupported?: string[];
@@ -204,6 +214,14 @@ export interface DiscoverOIDCConfigParams {
 	 * @returns {boolean} return true for urls that belong to a trusted origin and false otherwise
 	 */
 	isTrustedOrigin: (url: string) => boolean;
+
+	/**
+	 * When true, `private_key_jwt` will be preferred over secret-based methods
+	 * during auto-selection if the IdP advertises it in the discovery document.
+	 *
+	 * Set this to `true` when the caller has configured a `clientPrivateKey`.
+	 */
+	hasPrivateKey?: boolean;
 }
 
 /**

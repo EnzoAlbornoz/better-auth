@@ -32,8 +32,20 @@ export interface OIDCConfig {
 	overrideUserInfo?: boolean | undefined;
 	tokenEndpoint?: string | undefined;
 	tokenEndpointAuthentication?:
-		| ("client_secret_post" | "client_secret_basic")
+		| (
+				| "client_secret_post"
+				| "client_secret_basic"
+				| "private_key_jwt"
+				| "client_secret_jwt"
+		  )
 		| undefined;
+	/**
+	 * Private key for `private_key_jwt` client authentication (RFC 7523).
+	 *
+	 * Accepts a PEM-encoded PKCS#8 string or a JSON-serialised JWK string.
+	 * Required when `tokenEndpointAuthentication` is `"private_key_jwt"`.
+	 */
+	clientPrivateKey?: string | undefined;
 	jwksEndpoint?: string | undefined;
 	mapping?: OIDCMapping | undefined;
 }
