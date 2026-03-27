@@ -337,6 +337,50 @@ describe("OIDC Discovery", () => {
 			});
 			expect(selectTokenEndpointAuthMethod(doc)).toBe("client_secret_basic");
 		});
+
+		it("should select private_key_jwt when IdP advertises it and hasPrivateKey is true", () => {
+			const doc = createMockDiscoveryDocument({
+				token_endpoint_auth_methods_supported: [
+					"private_key_jwt",
+					"client_secret_basic",
+				],
+			});
+			expect(
+				selectTokenEndpointAuthMethod(doc, undefined, { hasPrivateKey: true }),
+			).toBe("private_key_jwt");
+		});
+
+		it("should not select private_key_jwt when hasPrivateKey is false, even if advertised", () => {
+			const doc = createMockDiscoveryDocument({
+				token_endpoint_auth_methods_supported: [
+					"private_key_jwt",
+					"client_secret_basic",
+				],
+			});
+			expect(
+				selectTokenEndpointAuthMethod(doc, undefined, { hasPrivateKey: false }),
+			).toBe("client_secret_basic");
+		});
+
+		it("should not select private_key_jwt when IdP does not advertise it, even if hasPrivateKey is true", () => {
+			const doc = createMockDiscoveryDocument({
+				token_endpoint_auth_methods_supported: ["client_secret_basic"],
+			});
+			expect(
+				selectTokenEndpointAuthMethod(doc, undefined, { hasPrivateKey: true }),
+			).toBe("client_secret_basic");
+		});
+
+		it("should honour an explicit existing value over auto-selection", () => {
+			const doc = createMockDiscoveryDocument({
+				token_endpoint_auth_methods_supported: ["private_key_jwt"],
+			});
+			expect(
+				selectTokenEndpointAuthMethod(doc, "client_secret_post", {
+					hasPrivateKey: true,
+				}),
+			).toBe("client_secret_post");
+		});
 	});
 
 	describe("normalizeDiscoveryUrls", () => {
