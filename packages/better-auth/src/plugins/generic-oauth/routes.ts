@@ -396,10 +396,13 @@ export const oAuth2Callback = (options: GenericOAuthOptions) =>
 						options: {
 							clientId: providerConfig.clientId,
 							clientSecret: providerConfig.clientSecret,
+							privateKey: providerConfig.clientPrivateKey,
 							redirectURI: providerConfig.redirectURI,
 						},
 						tokenEndpoint: finalTokenUrl,
-						authentication: providerConfig.authentication,
+					authentication:
+						providerConfig.authentication ??
+						(providerConfig.clientPrivateKey ? "private_key_jwt" : undefined),
 						additionalParams,
 					});
 				}

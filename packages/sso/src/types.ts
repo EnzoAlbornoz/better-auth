@@ -20,11 +20,10 @@ export interface SAMLMapping {
 	extraFields?: Record<string, string> | undefined;
 }
 
-export interface OIDCConfig {
+interface OIDCConfigBase {
 	issuer: string;
 	pkce: boolean;
 	clientId: string;
-	clientSecret: string;
 	authorizationEndpoint?: string | undefined;
 	discoveryEndpoint: string;
 	userInfoEndpoint?: string | undefined;
@@ -49,6 +48,14 @@ export interface OIDCConfig {
 	jwksEndpoint?: string | undefined;
 	mapping?: OIDCMapping | undefined;
 }
+
+/**
+ * Either a `clientSecret` or a `clientPrivateKey` (for `private_key_jwt`)
+ * must be provided — both are accepted simultaneously.
+ */
+export type OIDCConfig =
+	| (OIDCConfigBase & { clientSecret: string; clientPrivateKey?: string | undefined })
+	| (OIDCConfigBase & { clientSecret?: string | undefined; clientPrivateKey: string });
 
 export interface SAMLConfig {
 	issuer: string;

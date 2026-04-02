@@ -1,4 +1,11 @@
-import { importJWK, importPKCS8, SignJWT } from "jose";
+import type {
+	JWTHeaderParameters,
+} from "jose";
+import {
+	importJWK,
+	importPKCS8,
+	SignJWT,
+} from "jose";
 
 export const JWT_BEARER_URN =
 	"urn:ietf:params:oauth:client-assertion-type:jwt-bearer" as const;
@@ -88,7 +95,7 @@ export async function buildClientJwtAssertion({
 		key = await importPKCS8(privateKey, alg);
 	}
 
-	const header: Record<string, unknown> = { alg };
+	const header: JWTHeaderParameters = { alg };
 	if (kid) header.kid = kid;
 
 	const client_assertion = await new SignJWT(payload)

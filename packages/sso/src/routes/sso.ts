@@ -309,9 +309,12 @@ const ssoProviderBodySchema = z.object({
 			clientId: z.string({}).meta({
 				description: "The client ID",
 			}),
-			clientSecret: z.string({}).meta({
-				description: "The client secret",
-			}),
+			clientSecret: z
+				.string({})
+				.meta({
+					description: "The client secret",
+				})
+				.optional(),
 			authorizationEndpoint: z
 				.string({})
 				.meta({
@@ -400,6 +403,16 @@ const ssoProviderBodySchema = z.object({
 					extraFields: z.record(z.string(), z.any()).optional(),
 				})
 				.optional(),
+		})
+		.superRefine((data, ctx) => {
+			if (!data.clientSecret && !data.clientPrivateKey) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					message:
+						"Either clientSecret or clientPrivateKey must be provided",
+					path: ["clientSecret"],
+				});
+			}
 		})
 		.optional(),
 	samlConfig: z
@@ -674,7 +687,6 @@ export const registerSSOProvider = <O extends SSOOptions>(options: O) => {
 													"issuer",
 													"pkce",
 													"clientId",
-													"clientSecret",
 													"discoveryEndpoint",
 												],
 												description: "OIDC configuration for the provider",

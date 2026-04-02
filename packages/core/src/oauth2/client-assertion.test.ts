@@ -8,9 +8,9 @@ import {
 } from "jose";
 import { describe, expect, it } from "vitest";
 import {
-	JWT_BEARER_URN,
 	buildClientJwtAssertion,
 	buildClientSecretJwtAssertion,
+	JWT_BEARER_URN,
 } from "./client-assertion";
 
 describe("buildClientJwtAssertion", () => {
@@ -96,7 +96,9 @@ describe("buildClientJwtAssertion", () => {
 	});
 
 	it("produces a unique jti on each call", async () => {
-		const { privateKey } = await generateKeyPair("RS256", { extractable: true });
+		const { privateKey } = await generateKeyPair("RS256", {
+			extractable: true,
+		});
 		const pem = await exportPKCS8(privateKey);
 		const params = {
 			clientId: "client",
@@ -121,7 +123,9 @@ describe("buildClientJwtAssertion", () => {
 	});
 
 	it("includes kid in the JWT header when the JWK contains a kid field", async () => {
-		const { privateKey } = await generateKeyPair("ES256", { extractable: true });
+		const { privateKey } = await generateKeyPair("ES256", {
+			extractable: true,
+		});
 		const privateJwk = {
 			...(await exportJWK(privateKey)),
 			kid: "my-key-id-123",
@@ -135,7 +139,7 @@ describe("buildClientJwtAssertion", () => {
 
 		const [headerB64] = result.client_assertion.split(".");
 		const header = JSON.parse(
-			Buffer.from(headerB64, "base64url").toString("utf8"),
+			Buffer.from(headerB64!, "base64url").toString("utf8"),
 		);
 		expect(header.kid).toBe("my-key-id-123");
 	});

@@ -54,6 +54,13 @@ export interface GenericOAuthConfig {
 	/** OAuth client secret */
 	clientSecret?: string | undefined;
 	/**
+	 * Private key for `private_key_jwt` client authentication (RFC 7523).
+	 *
+	 * Accepts a PEM-encoded PKCS#8 string or a JSON-serialised JWK string.
+	 * Required when `authentication` is `"private_key_jwt"`.
+	 */
+	clientPrivateKey?: string | undefined;
+	/**
 	 * Array of OAuth scopes to request.
 	 * @default []
 	 */
@@ -163,7 +170,7 @@ export interface GenericOAuthConfig {
 	 * Authentication method for token requests.
 	 * @default "post"
 	 */
-	authentication?: ("basic" | "post") | undefined;
+	authentication?: ("basic" | "post" | "private_key_jwt" | "client_secret_jwt") | undefined;
 	/**
 	 * Custom headers to include in the discovery request.
 	 * Useful for providers like Epic that require specific headers (e.g., Epic-Client-ID).
