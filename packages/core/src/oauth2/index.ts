@@ -1,9 +1,9 @@
+export type { ClientAssertionResult } from "./client-assertion";
 export {
 	buildClientJwtAssertion,
 	buildClientSecretJwtAssertion,
 	JWT_BEARER_URN,
 } from "./client-assertion";
-export type { ClientAssertionResult } from "./client-assertion";
 export {
 	clientCredentialsToken,
 	clientCredentialsTokenRequest,
