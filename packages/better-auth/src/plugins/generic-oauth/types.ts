@@ -170,7 +170,9 @@ export interface GenericOAuthConfig {
 	 * Authentication method for token requests.
 	 * @default "post"
 	 */
-	authentication?: ("basic" | "post" | "private_key_jwt" | "client_secret_jwt") | undefined;
+	authentication?:
+		| ("basic" | "post" | "private_key_jwt" | "client_secret_jwt")
+		| undefined;
 	/**
 	 * Custom headers to include in the discovery request.
 	 * Useful for providers like Epic that require specific headers (e.g., Epic-Client-ID).

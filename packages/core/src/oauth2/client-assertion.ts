@@ -1,11 +1,5 @@
-import type {
-	JWTHeaderParameters,
-} from "jose";
-import {
-	importJWK,
-	importPKCS8,
-	SignJWT,
-} from "jose";
+import type { JWTHeaderParameters } from "jose";
+import { importJWK, importPKCS8, SignJWT } from "jose";
 
 export const JWT_BEARER_URN =
 	"urn:ietf:params:oauth:client-assertion-type:jwt-bearer" as const;

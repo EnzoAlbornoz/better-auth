@@ -408,8 +408,7 @@ const ssoProviderBodySchema = z.object({
 			if (!data.clientSecret && !data.clientPrivateKey) {
 				ctx.addIssue({
 					code: z.ZodIssueCode.custom,
-					message:
-						"Either clientSecret or clientPrivateKey must be provided",
+					message: "Either clientSecret or clientPrivateKey must be provided",
 					path: ["clientSecret"],
 				});
 			}
@@ -594,13 +593,13 @@ export const registerSSOProvider = <O extends SSOOptions>(options: O) => {
 														description: "The authorization endpoint URL",
 													},
 													clientPrivateKey: z
-												.string()
-												.meta({
-													description:
-														"Private key (PEM PKCS#8 or JWK JSON string) for private_key_jwt authentication",
-												})
-												.optional(),
-											discoveryEndpoint: {
+														.string()
+														.meta({
+															description:
+																"Private key (PEM PKCS#8 or JWK JSON string) for private_key_jwt authentication",
+														})
+														.optional(),
+													discoveryEndpoint: {
 														type: "string",
 														format: "uri",
 														description: "The discovery endpoint URL",

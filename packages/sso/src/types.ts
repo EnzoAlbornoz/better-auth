@@ -54,8 +54,14 @@ interface OIDCConfigBase {
  * must be provided — both are accepted simultaneously.
  */
 export type OIDCConfig =
-	| (OIDCConfigBase & { clientSecret: string; clientPrivateKey?: string | undefined })
-	| (OIDCConfigBase & { clientSecret?: string | undefined; clientPrivateKey: string });
+	| (OIDCConfigBase & {
+			clientSecret: string;
+			clientPrivateKey?: string | undefined;
+	  })
+	| (OIDCConfigBase & {
+			clientSecret?: string | undefined;
+			clientPrivateKey: string;
+	  });
 
 export interface SAMLConfig {
 	issuer: string;

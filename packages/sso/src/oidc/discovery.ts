@@ -466,7 +466,10 @@ export function selectTokenEndpointAuthMethod(
 
 	const supported = doc.token_endpoint_auth_methods_supported;
 
-	if (additionalContext?.hasPrivateKey && supported?.includes("private_key_jwt")) {
+	if (
+		additionalContext?.hasPrivateKey &&
+		supported?.includes("private_key_jwt")
+	) {
 		return "private_key_jwt";
 	}
 
