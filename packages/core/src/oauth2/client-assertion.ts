@@ -74,16 +74,25 @@ export async function buildClientJwtAssertion({
 		// Not JSON — treat as PEM PKCS#8
 	}
 
+	let kid: string | undefined;
+
 	if (parsedJwk) {
 		alg = algorithm ?? inferAlgorithmFromJwk(parsedJwk);
+		// Propagate the kid so IdPs like Okta can match it against their stored public key.
+		if (typeof parsedJwk.kid === "string") {
+			kid = parsedJwk.kid;
+		}
 		key = await importJWK(parsedJwk, alg);
 	} else {
 		alg = algorithm ?? "RS256";
 		key = await importPKCS8(privateKey, alg);
 	}
 
+	const header: Record<string, unknown> = { alg };
+	if (kid) header.kid = kid;
+
 	const client_assertion = await new SignJWT(payload)
-		.setProtectedHeader({ alg })
+		.setProtectedHeader(header)
 		.sign(key);
 
 	return { client_assertion, client_assertion_type: JWT_BEARER_URN };

@@ -119,6 +119,26 @@ describe("buildClientJwtAssertion", () => {
 			"urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
 		);
 	});
+
+	it("includes kid in the JWT header when the JWK contains a kid field", async () => {
+		const { privateKey } = await generateKeyPair("ES256", { extractable: true });
+		const privateJwk = {
+			...(await exportJWK(privateKey)),
+			kid: "my-key-id-123",
+		};
+
+		const result = await buildClientJwtAssertion({
+			clientId: "my-client",
+			tokenEndpoint: "https://idp.example.com/token",
+			privateKey: JSON.stringify(privateJwk),
+		});
+
+		const [headerB64] = result.client_assertion.split(".");
+		const header = JSON.parse(
+			Buffer.from(headerB64, "base64url").toString("utf8"),
+		);
+		expect(header.kid).toBe("my-key-id-123");
+	});
 });
 
 describe("buildClientSecretJwtAssertion", () => {
